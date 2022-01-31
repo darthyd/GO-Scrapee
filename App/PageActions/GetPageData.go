@@ -18,9 +18,14 @@ func scrollPage(ctx context.Context) error {
 		chromedp.Sleep(1*time.Second),
 		chromedp.SendKeys(`a`, kb.PageDown+kb.PageDown, chromedp.ByQuery),
 		chromedp.Sleep(2*time.Second),
+		chromedp.SendKeys(`a`, kb.PageDown+kb.PageDown, chromedp.ByQuery),
+		chromedp.Sleep(2*time.Second),
 		chromedp.SendKeys(`a`, kb.End, chromedp.ByQuery),
 		chromedp.Sleep(2*time.Second),
 	)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
 	if err != nil {
 		return errors.New("error while scrolling the page")
@@ -42,11 +47,11 @@ func GetPageData(
 
 	BaseUrl := "https://www.shopee.com.br/search?keyword="
 
-	log.Println("Going to the requested page...")
 	// Go to requested page
+	log.Println("Going to the requested page...")
 	errVisit := chromedp.Run(ctx,
 		chromedp.Navigate(BaseUrl+page),
-		chromedp.Sleep(5*time.Second),
+		chromedp.Sleep(6*time.Second),
 	)
 	if errVisit != nil {
 		return []*cdp.Node{}, []*cdp.Node{}, []*cdp.Node{}, errVisit
@@ -58,8 +63,8 @@ func GetPageData(
 		return []*cdp.Node{}, []*cdp.Node{}, []*cdp.Node{}, errScroll
 	}
 
-	log.Println("Getting data from the page...")
 	// Get page data
+	log.Println("Getting data from the page...")
 	errGet := chromedp.Run(ctx,
 		chromedp.Nodes(`._10Wbs-`, &names, chromedp.ByQueryAll),
 		chromedp.Nodes(".zp9xm9 > span:nth-child(2)", &prices, chromedp.ByQueryAll),
@@ -67,14 +72,14 @@ func GetPageData(
 		chromedp.Text(`.shopee-mini-page-controller__total`, &pageControllerTotal, chromedp.NodeVisible),
 		chromedp.Text(`.shopee-mini-page-controller__current`, &pageControllerCurrent, chromedp.NodeVisible),
 	)
-
 	if errGet != nil {
 		return []*cdp.Node{}, []*cdp.Node{}, []*cdp.Node{}, errGet
 	}
 
 	// Define total pages with page controller
-	if *totalPages == 1 {
-		*totalPages, _ = strconv.Atoi(pageControllerTotal)
+	parsedPageTotal, _ := strconv.Atoi(pageControllerTotal)
+	if *totalPages > parsedPageTotal {
+		*totalPages = parsedPageTotal
 	}
 
 	log.Printf("Got %v registries from page %v of %v total pages", len(names), pageControllerCurrent, *totalPages)
